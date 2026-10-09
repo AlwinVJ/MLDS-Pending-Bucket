@@ -1,7 +1,3 @@
-Absolutely. Since this is now your **own ML/Data Science learning platform**, I would make the README describe the project as an evolving portfolio project rather than mention that it is based on a tutorial.
-
-Below is a good initial `README.md`. It is intentionally written so we can update it as we implement authentication, database functionality, resources, search, and the frontend.
-
 ````markdown
 # ML/DS Pending Bucket
 
