@@ -1,38 +1,74 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException
 
-app = FastAPI()
+from app.schemas import CourseCategory, TopicCreate, TopicResponse
 
-text_posts = {
-    1: {"title": "New Post", "content": "Test Post"},
-    2: {"title": "Getting Started with FastAPI", "content": "FastAPI is a modern web framework for building APIs with Python."},
-    3: {"title": "Python Tips", "content": "Use list comprehensions for cleaner and faster code."},
-    4: {"title": "Async Programming", "content": "Async functions in Python allow non-blocking code execution."},
-    5: {"title": "REST API Design", "content": "Good REST APIs are stateless, consistent, and well-documented."},
-    6: {"title": "Database Integration", "content": "FastAPI works seamlessly with SQLAlchemy and async ORMs like Tortoise."},
-    7: {"title": "Pydantic Models", "content": "Pydantic models in FastAPI provide automatic data validation and serialization."},
-    8: {"title": "Authentication with JWT", "content": "Secure your FastAPI endpoints using OAuth2 and JWT tokens."},
-    9: {"title": "Dependency Injection", "content": "FastAPI's dependency injection system makes it easy to share logic across routes."},
-    10: {"title": "Deploying FastAPI", "content": "Deploy FastAPI apps using Docker and cloud platforms like AWS or Railway."},
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+
+
+app = FastAPI(
+    title="ML/DS Pending Bucket API",
+    description="API for managing Machine Learning and Data Science learning topics and resources.",
+    version="0.1.0",
+)
+
+
+# Temporary in-memory data.
+# This will be replaced by PostgreSQL when we reach the database section.
+topics = {
+    1: {
+        "id": 1,
+        "title": "Gradient Descent",
+        "description": "Understand the intuition and mathematics behind gradient descent.",
+        "module": 10,
+        "category": CourseCategory.MACHINE_LEARNING,
+        "hashtags": ["gradientdescent", "optimization"],
+    },
+    2: {
+        "id": 2,
+        "title": "Bayes Theorem",
+        "description": "Revise conditional probability and Bayes theorem.",
+        "module": 23,
+        "category": CourseCategory.DATA_SCIENCE,
+        "hashtags": ["probability", "bayes", "statistics"],
+    },
 }
 
-#creating end points neccessary for the project
 
-@app.get("/posts") # decorator to modify customized url-endpoint
+@app.get("/topics", response_model=list[TopicResponse])
+def get_all_topics(
+    limit: int | None = None,
+):
+    if limit is not None:
+        return list(topics.values())[:limit]
 
-def get_all_posts(limit:int = None):
-    if limit:
-        return list(text_posts.values())[:limit]
-    
-    return text_posts #created as dictionary since dealing with JSON format
+    return list(topics.values())
 
-@app.get("/posts{id}")
 
-def get_post(id:int):
-    if id not in text_posts:
-        raise HTTPException(status_code=404,detail="Post not found")
-    return text_posts.get(id)
+@app.get("/topics/{topic_id}", response_model=TopicResponse)
+def get_topic(topic_id: int):
+    if topic_id not in topics:
+        raise HTTPException(
+            status_code=404,
+            detail="Topic not found",
+        )
 
-@app.get("/posts")
+    return topics[topic_id]
 
-def create_post():
-    pass
+
+@app.post("/topics", response_model=TopicResponse, status_code=201)
+def create_topic(topic: TopicCreate):
+    new_id = max(topics.keys(), default=0) + 1
+
+    new_topic = {
+        "id": new_id,
+        **topic.model_dump(),
+    }
+
+    topics[new_id] = new_topic
+
+    return new_topic
